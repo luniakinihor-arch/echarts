@@ -7,8 +7,10 @@ RUN npm ci
 
 COPY . .
 
+RUN npm run build
+
 ENV PORT 3200
 
 EXPOSE 3200
 
-CMD ["sh", "-c", "npm run migrate && npm run prisma:generate && npm run dev"]
+CMD ["sh", "-c", "npm run migrate && npm run prisma:generate && npm start"]
