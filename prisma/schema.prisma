@@ -1,0 +1,46 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Request {
+  id        String        @id @default(cuid())
+  inputText String        @map("input_text")
+  chartType String?       @map("chart_type")
+  createdAt DateTime      @default(now()) @map("created_at")
+  steps     RequestStep[]
+  result    Result?
+
+  @@index([createdAt])
+  @@map("requests")
+}
+
+model RequestStep {
+  id       String @id @default(cuid())
+  stepName String @map("step_name")
+
+  prompt   String? @map("prompt")
+  response String? @map("response")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  requestId String   @map("request_id")
+  request   Request  @relation(fields: [requestId], references: [id])
+
+  @@map("request_steps")
+}
+
+model Result {
+  id            String   @id @default(cuid())
+  requestId     String   @unique @map("request_id")
+  success       Boolean
+  echartsConfig Json?    @map("echarts_config")
+  errorMessage  String?  @map("error_message")
+  createdAt     DateTime @default(now()) @map("created_at")
+  request       Request  @relation(fields: [requestId], references: [id])
+
+  @@map("results")
+}
