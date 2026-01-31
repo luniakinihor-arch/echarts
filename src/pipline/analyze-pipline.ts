@@ -7,22 +7,32 @@ export class AnalyzePipeline {
     static pipelineInstance: TextGenerationPipeline | null = null;
     static modelName = 'onnx-community/Qwen3-0.6B-ONNX'
     static task: TaskType = 'text-generation';
+    static loadingPromise: Promise<TextGenerationPipeline> | null = null;
 
-    static async init(): Promise<void> {
-        if (!this.pipelineInstance) {
-            this.pipelineInstance = await pipeline<TaskType>(this.task, this.modelName, {
-                dtype: 'q4f16',
+    static async getOrInitPipeline(): Promise<TextGenerationPipeline> {
+        if (this.pipelineInstance) {
+            return this.pipelineInstance;
+        }
+
+        if (this.loadingPromise) {
+            return this.loadingPromise;
+        }
+
+        this.loadingPromise = pipeline<TaskType>(this.task, this.modelName, {
+            dtype: 'q4f16',
+        })
+            .then((pipe) => {
+                this.pipelineInstance = pipe;
+                console.log('Model loaded successfully');
+                return pipe;
+            })
+            .catch((err) => {
+                console.error('Failed to load model:', err);
+                this.loadingPromise = null;
+                throw err;
             });
 
-            console.log('Pipeline initialized');
-        }
-    }
-
-    static getPipeline(): TextGenerationPipeline {
-        if (!this.pipelineInstance) {
-            throw new Error('AnalyzePipeline not initialized. Call init() first.');
-        }
-        return this.pipelineInstance;
+        return this.loadingPromise;
     }
 
     static async generateText(
@@ -30,7 +40,7 @@ export class AnalyzePipeline {
         maxLength: number = 300,
         systemPrompt: string = "You are a helpful assistant that classifies chart types and generates ECharts configs.",
     ): Promise<string> {
-        const generator = this.getPipeline();
+        const generator = await this.getOrInitPipeline();
 
         const messages = [
             { role: 'system', content: systemPrompt },
