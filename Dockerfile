@@ -8,9 +8,7 @@ RUN npm ci
 COPY . .
 
 RUN npm run build
-RUN npm run migrate
-RUN npm run prisma:generate
 
 EXPOSE 3200
 
-CMD ["npm", "start"]
+CMD ["sh", "-c", "npm run migrate && npm run prisma:generate && npm start"]
